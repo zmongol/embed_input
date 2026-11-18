@@ -10,6 +10,14 @@ class MenkImeDemo extends StatefulWidget {
 }
 
 class _MenkImeDemoState extends State<MenkImeDemo> {
+  /// Output encoding for the suggestions. MenkShape is the native encoding
+  /// (Menksoft PUA); Z52 and MenkLetter convert each suggestion at the
+  /// boundary. Note the left (vertical) field renders with the MenkQagan
+  /// font, so Z52/MenkLetter output is best checked in the right-hand
+  /// horizontal field, which uses the system font. Switching encoding
+  /// rebuilds the converter and clears the in-progress word.
+  MongolEncoding _outputEncoding = MongolEncoding.menkShape;
+
   @override
   Widget build(BuildContext context) {
     final Brightness brightnessValue =
@@ -20,7 +28,32 @@ class _MenkImeDemoState extends State<MenkImeDemo> {
     return Theme(
       data: theme,
       child: Scaffold(
-        appBar: AppBar(title: const Text("Menk Embed Ime Demo")),
+        appBar: AppBar(
+          title: const Text("Menk Embed Ime Demo"),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: DropdownButton<MongolEncoding>(
+                value: _outputEncoding,
+                items: const [
+                  DropdownMenuItem(
+                      value: MongolEncoding.menkShape,
+                      child: Text('MenkShape')),
+                  DropdownMenuItem(
+                      value: MongolEncoding.z52, child: Text('Z52')),
+                  DropdownMenuItem(
+                      value: MongolEncoding.menkLetter,
+                      child: Text('MenkLetter')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _outputEncoding = value);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
         body: Column(
           children: [
             const Expanded(
@@ -58,7 +91,9 @@ class _MenkImeDemoState extends State<MenkImeDemo> {
             TextFieldTapRegion(
               child: EmbedKeyboard(
                 layoutBuilders: [
-                  (i) => MenkLayout(i, converter: DBMenkLayoutConverter()),
+                  (i) => MenkLayout(i,
+                      converter: DBMenkLayoutConverter(
+                          outputEncoding: _outputEncoding)),
                   EnglishLayout.create,
                 ],
               ),

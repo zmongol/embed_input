@@ -17,7 +17,15 @@ void initZcodeDB() {
 
 /// Extend [ZcodeLayoutTextConverter] to produce extra words for the Candidate
 /// using the database. Also, support the next words suggestion.
+///
+/// The database stores Z52 words. When [outputEncoding] is
+/// [MongolEncoding.menkLetter], the database words are converted at the
+/// boundary just like the splicer words ([convertOutput]); the next-word
+/// lookup in [confirmWord] converts the confirmed word back to Z52 first,
+/// because the database can only be queried in its native encoding.
 class DBZcodeLayoutConverter extends ZcodeLayoutTextConverter {
+  DBZcodeLayoutConverter({super.outputEncoding});
+
   @override
   void appendLayoutText(String text) {
     super.appendLayoutText(text);
@@ -33,10 +41,15 @@ class DBZcodeLayoutConverter extends ZcodeLayoutTextConverter {
   @override
   void confirmWord(String word) {
     super.confirmWord(word);
-    final table = preLatinForText(word.trim());
+    // The confirmed word is in the output encoding; the database holds
+    // Z52, so convert it back before deriving the table and querying.
+    final native = outputEncoding == MongolEncoding.menkLetter
+        ? MongolEncodingConverter.shared.menkLetterToZ52(word.trim())
+        : word.trim();
+    final table = preLatinForText(native);
     if (table.isNotEmpty) {
-      final words = _nextSuggestion(table, word);
-      suggestionWords.addAll(words);
+      final words = _nextSuggestion(table, native);
+      suggestionWords.addAll(convertOutput(words));
     }
   }
 
@@ -44,7 +57,7 @@ class DBZcodeLayoutConverter extends ZcodeLayoutTextConverter {
     if (layoutText.isEmpty) return;
     LinkedHashSet<String> suggestions = LinkedHashSet.from(suggestionWords);
     var latin = layoutText.replaceAll('o', 'ʊ');
-    suggestions.addAll(_dbSuggestion(latin));
+    suggestions.addAll(convertOutput(_dbSuggestion(latin)));
     suggestionWords.clear();
     suggestionWords.addAll(suggestions);
   }

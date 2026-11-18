@@ -600,7 +600,16 @@ class ZCode {
         if (x == "g") {
           String y = str.substring(i + 1, i + 2);
           if (y == "a" || y == "o" || y == "v") {
-            m = wordMap[x][6];
+            // ANG digraph (desktop Fix 1, G.gMiddleAngGa): a G directly
+            // after 'n' ("ng") before 'a'/'o' takes the ANG shape
+            // U+188A U+1871 U+1871 — the ANG form plus the double-tooth
+            // form. The old code overwrote the ANG form (set just above
+            // by "solving g not after a or o") with the double-tooth form
+            // alone, dropping the ANG (e.g. "mongol" lost its U+188A).
+            // A plain G before 'a'/'o' still takes the double-tooth form.
+            m = yy == "n"
+                ? wordMap[x][7] + wordMap[x][6]
+                : wordMap[x][6];
           }
         }
 

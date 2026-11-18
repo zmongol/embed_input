@@ -18,7 +18,17 @@ void initMenkDB() {
 
 /// Extend [MenkLayoutConverter] to produce extra words for the Candidate
 /// using the database. Also, support the next words suggestion.
+///
+/// The database stores MenkShape (Menksoft PUA) words. When
+/// [outputEncoding] is not [MongolEncoding.menkShape], the database words
+/// are converted at the boundary just like the splicer words
+/// ([convertOutput]). The next-word lookup in [confirmWord] only runs in
+/// the native MenkShape encoding: converting a confirmed Z52/MenkLetter
+/// word back to MenkShape is not a ported direction, so there is nothing
+/// correct to query the database with in those encodings.
 class DBMenkLayoutConverter extends MenkLayoutConverter {
+  DBMenkLayoutConverter({super.outputEncoding});
+
   @override
   void appendLayoutText(String text) {
     super.appendLayoutText(text);
@@ -34,12 +44,13 @@ class DBMenkLayoutConverter extends MenkLayoutConverter {
   @override
   void confirmWord(String word) {
     super.confirmWord(word);
+    if (outputEncoding != MongolEncoding.menkShape) return;
     final wordTrim = word.trim();
     if (wordTrim.isEmpty) return;
     final table = latinForCode(wordTrim.codeUnitAt(0));
     if (table.isNotEmpty) {
       final words = _nextSuggestion(table, word);
-      suggestionWords.addAll(words);
+      suggestionWords.addAll(convertOutput(words));
     }
   }
 
@@ -47,7 +58,7 @@ class DBMenkLayoutConverter extends MenkLayoutConverter {
     if (layoutText.isEmpty) return;
     LinkedHashSet<String> suggestions = LinkedHashSet.from(suggestionWords);
     var latin = layoutText.replaceAll('o', 'ʊ');
-    suggestions.addAll(_dbSuggestion(latin));
+    suggestions.addAll(convertOutput(_dbSuggestion(latin)));
     suggestionWords.clear();
     suggestionWords.addAll(suggestions);
   }

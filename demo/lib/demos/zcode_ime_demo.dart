@@ -10,6 +10,14 @@ class ZcodeImeDemo extends StatefulWidget {
 }
 
 class _ZcodeImeDemoState extends State<ZcodeImeDemo> {
+  /// Output encoding for the suggestions. Z52 is the native encoding;
+  /// MenkLetter converts each suggestion at the boundary. Note the left
+  /// (vertical) field renders with the Z52 font, so MenkLetter output is
+  /// best checked in the right-hand horizontal field, which uses the
+  /// system font. Switching encoding rebuilds the converter and clears
+  /// the in-progress word.
+  MongolEncoding _outputEncoding = MongolEncoding.z52;
+
   @override
   Widget build(BuildContext context) {
     final Brightness brightnessValue =
@@ -20,7 +28,29 @@ class _ZcodeImeDemoState extends State<ZcodeImeDemo> {
     return Theme(
       data: theme,
       child: Scaffold(
-        appBar: AppBar(title: const Text("Zcode Ime Demo")),
+        appBar: AppBar(
+          title: const Text("Zcode Ime Demo"),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: DropdownButton<MongolEncoding>(
+                value: _outputEncoding,
+                items: const [
+                  DropdownMenuItem(
+                      value: MongolEncoding.z52, child: Text('Z52')),
+                  DropdownMenuItem(
+                      value: MongolEncoding.menkLetter,
+                      child: Text('MenkLetter')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _outputEncoding = value);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
         body: Column(
           children: [
             const Expanded(
@@ -57,7 +87,9 @@ class _ZcodeImeDemoState extends State<ZcodeImeDemo> {
             ),
             EmbedKeyboard(
               layoutBuilders: [
-                (i) => ZcodeLayout(i, converter: DBZcodeLayoutConverter()),
+                (i) => ZcodeLayout(i,
+                    converter: DBZcodeLayoutConverter(
+                        outputEncoding: _outputEncoding)),
                 EnglishLayout.create
               ],
             ),

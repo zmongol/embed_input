@@ -9,6 +9,7 @@
 library embed_ime;
 
 export 'candidate/mongol_candidate.dart';
+export 'encoding/mongol_encoding_converter.dart';
 export 'keyboard/embed_keyboard.dart';
 export 'keyboard/embed_text_input.dart';
 export 'keyboard/key_map.dart';
